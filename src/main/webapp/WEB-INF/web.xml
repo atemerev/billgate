@@ -1,0 +1,17 @@
+<web-app version="2.5">
+    <listener>
+        <listener-class>ru.circumflex.orm.TransactionManagementListener</listener-class>
+    </listener>
+    <filter>
+        <filter-name>Circumflex Core Filter</filter-name>
+        <filter-class>ru.circumflex.core.CircumflexFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>Circumflex Core Filter</filter-name>
+        <url-pattern>*</url-pattern>
+        <dispatcher>REQUEST</dispatcher>
+        <dispatcher>FORWARD</dispatcher>
+        <dispatcher>INCLUDE</dispatcher>
+        <dispatcher>ERROR</dispatcher>
+    </filter-mapping>
+</web-app>
