@@ -36,6 +36,14 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>oracle</id>
+            <name>Oracle repository</name>
+            <url>http://download.oracle.com/maven/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
@@ -67,6 +75,11 @@
             <groupId>ru.circumflex</groupId>
             <artifactId>circumflex-orm</artifactId>
             <version>${cx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sleepycat</groupId>
+            <artifactId>je</artifactId>
+            <version>4.0.103</version>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>

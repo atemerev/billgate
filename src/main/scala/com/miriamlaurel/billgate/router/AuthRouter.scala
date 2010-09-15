@@ -13,7 +13,7 @@ class AuthRouter extends RequestRouter {
     val password = param("password")
     val client = Client.byLogin(login)
     if (client.isDefined && client.get.auth(password)) {
-      // create session and return session id (set cookie)
+      //TODO create session and return session id (set cookie)
       "OK"
     } else {
       error(404, "AUTH FAILED")
