@@ -25,7 +25,6 @@ class TestBDBJESessionStorage extends FunSuite {
   test("Saving session") {
     val (env, db) = setupDatabase
     val storage = new BDBJESessionDao(env,db)
-    storage.createSession()
   }
 
 }
