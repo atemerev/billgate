@@ -5,10 +5,10 @@ import com.miriamlaurel.billgate.security.session.Session
 
 trait SessionDAO {
 
-  def createSession(client: Client) : Session;
+  def createSession(clientLogin: String) : Session;
 
   def invalidateSession(session: Session) : Boolean ;
 
-  def loadClient(session : Session) : Client;
+  def loadClient(session : Session) : String;
 
 }

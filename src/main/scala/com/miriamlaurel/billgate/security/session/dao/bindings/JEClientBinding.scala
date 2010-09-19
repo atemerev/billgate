@@ -12,19 +12,17 @@ import java.util.Date;
 class JEClientBinding extends TupleBinding[ClientAccessTimeWrapper] {
 
     override def entryToObject(tupleInput : TupleInput) : ClientAccessTimeWrapper = {
-        val client = new Client;
-        val id = tupleInput.readString();
-        //TODO set id of client
+        val clientLogin = tupleInput.readString();
         val calendar = Calendar.getInstance();
         calendar setTimeInMillis(tupleInput.readLong()*1000);
         val accessDate = calendar.getTime();
-        new ClientAccessTimeWrapper(client,accessDate);
+        new ClientAccessTimeWrapper(clientLogin,accessDate);
     }
 
     override def objectToEntry(client : ClientAccessTimeWrapper, tupleOutput : TupleOutput) {
-        val realClient = client getClient;
+        val clientLogin = client getClientLogin;
         val accessDate = client getAccessDate;
-        tupleOutput writeString(String.valueOf(realClient.id()));
+        tupleOutput writeString(clientLogin);
         tupleOutput writeLong(accessDate.getTime());
     }
 

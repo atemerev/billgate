@@ -7,7 +7,7 @@ import java.io.File
 import com.sleepycat.je._
 import com.sleepycat.bind.tuple.{TupleOutput, TupleInput, TupleBinding}
 import com.miriamlaurel.billgate.security.session.entity.ClientAccessTimeWrapper
-import java.util.UUID
+import java.util.{Date, UUID}
 
 class BDBJESessionDao( envP : Environment, sessionDBP : Database ) extends SessionDAO with BDBJETxnTrait {
 
@@ -15,10 +15,10 @@ class BDBJESessionDao( envP : Environment, sessionDBP : Database ) extends Sessi
   
   private val sessionDb : Database = sessionDBP
 
-  override def loadClient( session : Session ) : Client = {
-    var client : Client = null
+  override def loadClient( session : Session ) : String = {
+    var client : String = null
     withTransactionDo(env) {
-      _ => def worker( txn : Transaction ) = {
+      txn => {
         val ccfg = new CursorConfig
         ccfg setReadCommitted true
         val cursor = sessionDb openCursor (txn, ccfg)
@@ -30,9 +30,10 @@ class BDBJESessionDao( envP : Environment, sessionDBP : Database ) extends Sessi
         cursor getSearchKey ( sessionEntry, clientEntry, LockMode.RMW ) match {
           case OperationStatus.SUCCESS =>
             val clientWrapper : ClientAccessTimeWrapper = clientBinding entryToObject clientEntry
-            client = clientWrapper getClient
+            client = clientWrapper getClientLogin
           case _ => client = null
         }
+        cursor close
       }
     }
     client
@@ -42,7 +43,7 @@ class BDBJESessionDao( envP : Environment, sessionDBP : Database ) extends Sessi
     //TODO remove from database
     var removed = false
     withTransactionDo(env) {
-      _ => def worker( txn : Transaction ) = {
+      txn => {
         val sessionBinding : TupleBinding[Session] = JEBindingFactory getSessionBinding
         val sessionEntry = new DatabaseEntry
         sessionBinding objectToEntry (session, sessionEntry)
@@ -52,8 +53,20 @@ class BDBJESessionDao( envP : Environment, sessionDBP : Database ) extends Sessi
     removed
   }
 
-  override  def createSession( client : Client ) : Session = {
-    new Session(UUID.randomUUID.toString)
+  override  def createSession( clientLogin : String ) : Session = {
+    val session = new Session(UUID.randomUUID.toString)
+    val sessionBinding = JEBindingFactory.getSessionBinding
+    val clientBinding = JEBindingFactory.getClientBinding
+    val sessionEntry = new DatabaseEntry
+    val clientEntry = new DatabaseEntry
+    sessionBinding objectToEntry (session, sessionEntry)
+    clientBinding objectToEntry (new ClientAccessTimeWrapper(clientLogin, new Date), clientEntry)
+    withTransactionDo(env) {
+      txn => {
+        val status = sessionDb putNoOverwrite (txn, sessionEntry, clientEntry)
+      }
+    }
+    session
   }
 
 }

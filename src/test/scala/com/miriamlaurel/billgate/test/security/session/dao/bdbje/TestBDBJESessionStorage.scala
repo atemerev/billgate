@@ -15,17 +15,25 @@ class TestBDBJESessionStorage extends FunSuite {
     envCfg setTransactional true
     envCfg setAllowCreate true
     val env = new Environment(tmpDir, envCfg)
+    env truncateDatabase (null,"test",false)
     val dbCfg = new DatabaseConfig
-    dbCfg setTemporary true
     dbCfg setAllowCreate true
+    dbCfg setTransactional true
     val testDb = env openDatabase (null, "test", dbCfg)
     ( env, testDb )
   }
 
-  test("Saving session") {
+  test("Session management") {
     val (env, db) = setupDatabase
     val storage = new BDBJESessionDao(env,db)
-
+    val session = storage createSession("jdevelop")
+    assert(session != null)
+    val clientLogin = storage loadClient session
+    assert( "jdevelop" == clientLogin, "Loaded client login " + clientLogin )
+    storage invalidateSession session
+    val absentLogin = storage loadClient session
+    assert( null == absentLogin, "Client login still exists" + absentLogin )
+    println("Completed without errors")
   }
 
 }
