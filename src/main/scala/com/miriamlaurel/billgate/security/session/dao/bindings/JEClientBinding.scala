@@ -14,7 +14,7 @@ class JEClientBinding extends TupleBinding[ClientAccessTimeWrapper] {
     override def entryToObject(tupleInput : TupleInput) : ClientAccessTimeWrapper = {
         val clientLogin = tupleInput.readString();
         val calendar = Calendar.getInstance();
-        calendar setTimeInMillis(tupleInput.readLong()*1000);
+        calendar setTimeInMillis(tupleInput.readLong());
         val accessDate = calendar.getTime();
         new ClientAccessTimeWrapper(clientLogin,accessDate);
     }

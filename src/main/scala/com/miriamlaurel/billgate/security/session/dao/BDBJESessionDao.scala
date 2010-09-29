@@ -1,19 +1,20 @@
 package com.miriamlaurel.billgate.security.session.dao
 
 import bindings.JEBindingFactory
-import com.miriamlaurel.billgate.model.Client
 import com.miriamlaurel.billgate.security.session.Session
 import java.io.File
 import com.sleepycat.je._
-import com.sleepycat.bind.tuple.{TupleOutput, TupleInput, TupleBinding}
+import com.sleepycat.bind.tuple.TupleBinding
 import com.miriamlaurel.billgate.security.session.entity.ClientAccessTimeWrapper
 import java.util.{Date, UUID}
-
-class BDBJESessionDao( envP : Environment, sessionDBP : Database ) extends SessionDAO with BDBJETxnTrait {
+class BDBJESessionDao( envP : Environment, sessionDBP : Database, purgeThresholdSec : Int = 15 ) extends SessionDAO
+        with BDBJETxnTrait with Purgeable {
 
   private val env : Environment = envP
   
   private val sessionDb : Database = sessionDBP
+
+  private var purgeThresholdSeconds : Int = 15;
 
   override def loadClient( session : Session ) : String = {
     var client : String = null
@@ -40,7 +41,6 @@ class BDBJESessionDao( envP : Environment, sessionDBP : Database ) extends Sessi
   }
 
   override  def invalidateSession( session : Session ) : Boolean = {
-    //TODO remove from database
     var removed = false
     withTransactionDo(env) {
       txn => {
@@ -69,13 +69,36 @@ class BDBJESessionDao( envP : Environment, sessionDBP : Database ) extends Sessi
     session
   }
 
+  def purge() = {
+    val purgeThreshold = purgeThresholdSec * 1000
+    withTransactionDo(env) {
+      txn => {
+        val clientBinding = JEBindingFactory.getClientBinding
+        val ccfg : CursorConfig = new CursorConfig
+        ccfg setReadCommitted true
+        val clientEntry = new DatabaseEntry
+        val sessionEntry = new DatabaseEntry
+        val cursor = sessionDb openCursor (txn, ccfg)
+        val currentDateTime = System.currentTimeMillis
+        while ( cursor.getNext(sessionEntry, clientEntry, LockMode.RMW ) == OperationStatus.SUCCESS) {
+          val client : ClientAccessTimeWrapper = clientBinding entryToObject clientEntry
+          val clientAccessTime = client.getAccessDate.getTime
+          if ( currentDateTime - clientAccessTime > purgeThreshold ) {
+            cursor delete
+          }
+        }
+        cursor close
+      }
+    }
+  }
+
 }
 
 object BDBJESessionDao {
 
   val dbName = "SESSIONDB"
 
-  def getSessionStorage( folder : String ) = {
+  def getSessionStorage( folder : String, purgeThreshold : Int = 15 ) = {
 
     val envCfg : EnvironmentConfig = new EnvironmentConfig
     envCfg setAllowCreate true
@@ -91,7 +114,7 @@ object BDBJESessionDao {
     sessionDbCfg setTransactional true
     val sessionDb = env openDatabase (null, dbName, sessionDbCfg)
 
-    new BDBJESessionDao(env, sessionDb)
+    new BDBJESessionDao(env, sessionDb, purgeThreshold)
   }
 
 }
